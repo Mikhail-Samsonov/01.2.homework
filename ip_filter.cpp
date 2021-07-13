@@ -19,7 +19,7 @@ int main() {
       ipPool.push_back(split(s, '.'));
     }
 
-    auto compare = [](ipAddress a, ipAddress b) {
+    auto compare = [&](ipAddress a, ipAddress b) {
       for (int i = 0; i < 4; i++) {
         if (a[i] != b[i]) return a[i] > b[i];
       }
