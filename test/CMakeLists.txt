@@ -2,40 +2,41 @@ cmake_minimum_required(VERSION 3.10)
 
 project(test)
 
-find_package(GTest REQUIRED)
 
-add_executable(t_splitIsOk splitIsOk.cpp)
-add_executable(t_coutIsOk coutIsOk.cpp)
+configure_file(CMakeLists.txt.in
+        googletest-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/googletest-download)
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test/googletest-download)
 
-set_target_properties(
-        t_splitIsOk t_coutIsOk PROPERTIES
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED ON
-)
+add_subdirectory(${CMAKE_BINARY_DIR}/test/googletest-src
+        ${CMAKE_BINARY_DIR}/test/googletest-build)
 
-target_link_libraries(
-        t_splitIsOk
-        GTest::GTest GTest::Main
-        lib
-)
 
-target_include_directories(
-        t_splitIsOk PRIVATE
-        ${GTEST_INCLUDE_DIRS}
-        ${CMAKE_CURRENT_BINARY_DIR}
-)
+file(GLOB_RECURSE HEADERS "${CMAKE_SOURCE_DIR}/src/*.h")
+file(GLOB_RECURSE SOURCES "${CMAKE_SOURCE_DIR}/src/*.cpp")
 
-target_link_libraries(
-        t_coutIsOk
-        GTest::GTest GTest::Main
-        lib
-)
+file(GLOB_RECURSE TESTS "${CMAKE_SOURCE_DIR}/test/*.cpp")
 
-target_include_directories(
-        t_coutIsOk PRIVATE
-        ${GTEST_INCLUDE_DIRS}
-        ${CMAKE_CURRENT_BINARY_DIR}
-)
+foreach (file ${TESTS})
+    set(name)
+    get_filename_component(name ${file} NAME_WE)
+    add_executable("${name}_tests"
+            ${HEADERS}
+            ${SOURCES}
+            ${file})
+    target_link_libraries("${name}_tests" gtest_main)
 
-add_test(splitIsOk t_splitIsOk)
-add_test(coutIsOk t_coutIsOk)
+    target_include_directories("${name}_tests" PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+    if (MSVC)
+        target_compile_options("${name}_tests" PRIVATE /W4)
+    else ()
+        target_compile_options("${name}_tests" PRIVATE -Wall -Wextra -pedantic -Werror)
+    endif ()
+
+    add_test(NAME ${name} COMMAND "${name}_tests")
+endforeach ()
+
+
